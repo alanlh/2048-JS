@@ -1,0 +1,448 @@
+<!-- Current Bugs:  -->
+<!-- Version History: -->
+
+<!-- 6/14/2017 V1.00: Complete game -->
+
+<!DOCTYPE html>
+
+<html>
+
+<body>
+
+<h1>2048</h1>
+
+<h3>Alan Hu</h3>
+
+<h5> You must click the button below to start. To move, either use WASD or arrow keys.</h5>
+
+<h3 id = "score">Your score: 0</h3>
+
+<button onclick="restartGame()" id = "Started"> Click to start </button>
+
+<p id = "Lost"></p>
+<canvas id="board" width="400" height="400">
+Your browser does not support the canvas element.
+</canvas>
+
+<h6>Version 1.00 (aka the game works but it's extremely unpolished)</h6>
+
+<script> // Generate Board
+	var boardGrid = document.getElementById("board");
+	var ctx = boardGrid.getContext("2d");
+	for (var i = 1; i < 5; i++)
+	{
+		for (var j = 1; j < 5; j++)
+		{
+			ctx.moveTo(100*i-100,100*j-100);
+			ctx.lineTo(100*i,100*j-100);
+			ctx.lineTo(100*i,100*j);
+			ctx.lineTo(100*i-100,100*j);
+			ctx.lineTo(100*i-100,100*j-100);
+			ctx.stroke();
+		}
+	}
+
+// Create 16 squares
+	
+	var squares = new Array(4);
+	for (var i = 0; i < squares.length; i ++)
+		{
+			squares[i] = new Array(4);
+			for (var j = 0; j < squares[i].length; j ++)
+			{
+				squares[i][j] = 0;
+			}
+		}
+		
+</script>
+
+<script> // Fill boxes
+
+	function colorNames(n) 
+	{
+		if (n == 0)
+		{
+			return "rgb(256,256,256)"
+		}
+		else
+		{
+			return "rgb("+ 16*n +",150," + (256-16*n) + ")"
+		}
+	}
+
+	function fillBox(x,y,n) // Code for filling in a box.
+	{
+		ctx.fillStyle = colorNames(n);
+		ctx.fillRect (100*x+1,100*y+1,98,98,0.5);
+		ctx.font = "30px Calibri";
+		ctx.textAlign = "center";
+		ctx.fillStyle = "red";
+		var number;
+		if (n >= 1)
+		{
+			number = Math.pow(2,n);
+		}
+		else
+		{
+			number = "";
+		}
+		ctx.fillText(number, 100*x+50,100*y+60);
+	}
+</script>
+
+<script> // Game functions
+
+	var emptySquares = 16;
+
+	function generatePiece()
+	{
+		while(true)
+		{
+			var result = Math.floor((Math.random() * 16));
+			var x = result % 4;
+			var y = Math.floor(result/4);
+			var pieceType = Math.floor((Math.random() * 4))+1;
+			if (squares[x][y] == 0)
+			{
+				squares[x][y] = Math.ceil(pieceType/3);
+				fillBox(x,y,squares[x][y]);
+				break;
+			}
+
+		}
+	}
+
+	var score = 0;
+	
+	function scoreKeep(n) 
+	{
+		score = score + Math.pow(2,n+1);
+	}
+
+	function lossDetect()
+	{
+		for (var x =0; x < 4; x++)
+		{
+			for (var y = 0; y < 3; y++)
+			{
+				if (squares[x][y] == squares[x][y+1])
+				{
+					return false;
+				}
+			}
+		}
+		for (var y = 0; y < 4; y++)
+		{
+			for (var x = 0; x < 3; x++)
+			{
+				if (squares[x][y] == squares[x+1][y])
+				{
+					return false;
+				}
+			}
+		}
+		
+		return true;
+	}
+</script>
+	
+<script> // Main commands
+
+	function gameMove() // Single game loop after movement
+	{
+				
+	
+		generatePiece();
+		emptySquares --;
+		
+	}
+	
+		
+	function moveDown() // On click, these four functions activate, as well as the other stuff below as well. 
+	{
+		var realMove = false;
+		for (var x = 0; x < 4; x++)
+		{
+			combinedAlready = false;
+			for (var y = 2; y >= 0; y--)
+			{
+				if (squares[x][y] != 0)
+				{
+					var testNonEmpty = y+1;  // used to test if the square in the direction of the movement is empty or the same as 
+					while (testNonEmpty < 4 && squares[x][testNonEmpty] == 0) // increases testNonEmpty until it is either 4 or the square is not empty 
+					{
+						testNonEmpty ++; // if all squares are empty, testNonEmpty should be 4, if not, then it should equal the nonempty square.
+					}
+					if (testNonEmpty == 4)
+					{
+						squares[x][3] = squares[x][y];
+						squares[x][y] = 0;
+						realMove = true;
+					}
+					else if (squares[x][testNonEmpty] == squares[x][y] && combinedAlready == false)
+					{
+						squares[x][testNonEmpty] ++;
+						emptySquares ++;
+						scoreKeep(squares[x][y]);
+						realMove = true;
+						squares[x][y] = 0;
+						combinedAlready = true;
+					}
+					else
+					{
+						squares[x][testNonEmpty-1] = squares[x][y];
+						combinedAlready = false;
+						if (testNonEmpty != y+1)
+						{
+							squares[x][y] = 0;
+							realMove = true;
+						}
+					}
+				}
+			}
+		}
+		if (realMove == true)
+		{
+			gameMove();
+		}
+	}
+	
+	function moveRight() // The only differences between these few functions is the order of the x and y variables and the + and - signs. 
+	{
+		var realMove = false;
+		for (var y = 0; y < 4; y++) // When moving right, x and y need to be reversed, but the + - signs should stay the same.
+		{
+			var combinedAlready = false;
+			for (var x = 2; x >= 0; x--)
+			{
+				if (squares[x][y] != 0)
+				{
+					var testNonEmpty = x+1;  // used to test if the square in the direction of the movement is empty or the same as 
+					while (testNonEmpty < 4 && squares[testNonEmpty][y] == 0) // increases testNonEmpty until it is either 4 or the square is not empty 
+					{
+						testNonEmpty ++; // if all squares are empty, testNonEmpty should be 4, if not, then it should equal the nonempty square.
+					}
+					if (testNonEmpty == 4)
+					{
+						squares[3][y] = squares[x][y];
+						squares[x][y] = 0;
+						realMove = true;
+					}
+					else if (squares[testNonEmpty][y] == squares[x][y] && combinedAlready == false)
+					{
+						squares[testNonEmpty][y] ++;
+						emptySquares ++;
+						scoreKeep(squares[x][y]);
+						realMove = true;
+						squares[x][y] = 0;
+						combinedAlready = true;
+					}
+					else
+					{
+						squares[testNonEmpty-1][y] = squares[x][y];
+						combinedAlready = false;
+						if (testNonEmpty != x+1)
+						{
+							squares[x][y] = 0;
+							realMove = true;
+						}
+					}
+				}
+			}
+		}
+		if (realMove == true)
+		{
+			gameMove();
+		}
+	}
+	
+	function moveUp()
+	{
+		var realMove = false;
+		for (var x = 0; x < 4; x++) // Whem moving up, the x and y stay same, but the signs should be reversed.
+		{
+			var combinedAlready = false; 
+			for (var y = 1; y < 4; y++)
+			{
+				if (squares[x][y] != 0)
+				{
+					var testNonEmpty = y-1;  // used to test if the square in the direction of the movement is empty or the same as 
+					while ( squares[x][testNonEmpty] == 0 && testNonEmpty >= 0 ) // increases testNonEmpty until it is either 4 or the square is not empty 
+					{
+						testNonEmpty --; // if all squares are empty, testNonEmpty should be -1, if not, then it should equal the nonempty square.
+					}
+					if (testNonEmpty == -1)
+					{
+						squares[x][0] = squares[x][y];
+						squares[x][y] = 0;
+						realMove = true;
+
+					}
+					else if (squares[x][testNonEmpty] == squares[x][y] && combinedAlready == false)
+					{
+						squares[x][testNonEmpty] ++;
+						emptySquares ++;
+						scoreKeep(squares[x][y]);
+						realMove = true;
+						squares[x][y] = 0;
+						combinedAlready = true;
+					}
+					else
+					{
+						squares[x][testNonEmpty+1] = squares[x][y];
+						combinedAlready = false;
+						if (testNonEmpty != y-1)
+						{
+							squares[x][y] = 0;
+							realMove = true;
+						}
+
+					}
+				}
+			}
+		}
+		if (realMove == true)
+		{
+			gameMove();
+		}
+
+	}
+	
+	function moveLeft()
+	{
+		var realMove = false;
+		for (var y = 0; y < 4; y++) // Whem moving left, the x and y stay same, and the signs should be reversed.
+		{
+			var combinedAlready = false;
+			for (var x = 1; x < 4; x++)
+			{
+				if (squares[x][y] != 0)
+				{
+					var testNonEmpty = x-1;  // used to test if the square in the direction of the movement is empty or the same as
+					while ( testNonEmpty >= 0 && squares[testNonEmpty][y] == 0 ) // decreases testNonEmpty until it is either -1 or the square is not empty 
+					{
+						testNonEmpty --; // if all squares are empty, testNonEmpty should be -1, if not, then it should equal the nonempty square.
+					}
+					if (testNonEmpty == -1)
+					{
+						squares[0][y] = squares[x][y];
+						squares[x][y] = 0;
+						realMove = true;
+
+					}
+					else if (squares[testNonEmpty][y] == squares[x][y] && combinedAlready == false)
+					{
+						squares[testNonEmpty][y] ++;
+						emptySquares ++;
+						scoreKeep(squares[x][y]);
+						realMove = true;
+						squares[x][y] = 0;
+						combinedAlready = true;
+					}
+					else
+					{
+						squares[testNonEmpty+1][y] = squares[x][y];
+						combinedAlready = false;
+						if (testNonEmpty != x-1)
+						{
+							squares[x][y] = 0;
+							realMove = true;
+						}
+					}
+				}
+			}
+		}
+		
+		if (realMove == true)
+		{
+			gameMove();
+		}
+	
+	}
+
+
+
+	var gameLost = true;
+
+
+//	window.addEventListener("keydown",check,false);
+	window.addEventListener("keydown", function(e)
+	{
+		var code = e.keyCode;
+		
+		if (gameLost == true)
+		{
+			return;
+		}	
+		else if (code == 87 || code == 38)
+		{
+			moveUp();
+		}
+		else if (code == 65 || code == 37)
+		{
+			moveLeft();
+		}
+		else if (code == 83 || code == 40)
+		{
+			moveDown();
+		}
+		else if (code == 68 || code == 39)
+		{
+			moveRight();
+		}
+		for (var x = 0; x <4; x++)
+		{
+			for (var y = 0; y <4; y++)
+			{
+				fillBox(x,y,squares[x][y]);
+			}
+		}
+		document.getElementById("score").innerHTML = "Your score: " + score;
+					
+		if (emptySquares == 0)
+		{
+			if (lossDetect())
+			{
+				document.getElementById("Lost").innerHTML = "You LOST! Try again?"; 
+				gameLost = true;
+			}	
+		}
+
+	});
+		
+		
+</script>
+
+<script> // Restart Game
+
+function restartGame()
+{
+	gameLost = false;
+	score = 0; 
+	document.getElementById("score").innerHTML = "Your score: " + score;
+
+	for (var x = 0; x < 4; x++)
+	{
+		for (var y = 0; y < 4; y++)
+		{
+			squares[x][y] = 0;
+			fillBox(x,y,0);
+		}
+	}
+	
+	generatePiece();
+	generatePiece();
+
+	
+	emptySquares = 14;
+	
+	document.getElementById("Started").innerHTML = " Click to restart ";
+	document.getElementById("Lost").innerHTML = "";
+}
+
+</script>
+
+</body>
+
+</html>
+
